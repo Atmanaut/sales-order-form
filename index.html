@@ -151,6 +151,7 @@
 
       try {
         const response = await fetch('https://script.google.com/macros/s/AKfycbyAZJy8dVHL56JpOl_tyEvqQBLF-VdC8y5fhFIZnOa9_fNLwiN4_v5UvOxwvZIW8lo/exec', {
+          mode: 'no-cors',
           method: 'POST',
           body: JSON.stringify(payload),
           headers: {
