@@ -113,64 +113,62 @@
     const totalInput = document.getElementById('total');
 
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  e.preventDefault();
 
-      const formData = new FormData(form);
-      const items = [];
+  const formData = new FormData(form);
+  const items = [];
 
-      document.querySelectorAll('.item-row').forEach(row => {
-        const name = row.querySelector('.item-name').value;
-        const quantity = parseFloat(row.querySelector('.item-qty').value);
-        const unitPrice = parseFloat(row.querySelector('.item-price').value);
-        const total = quantity * unitPrice;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const name = row.querySelector('.item-name').value;
+    const quantity = parseFloat(row.querySelector('.item-qty').value);
+    const unitPrice = parseFloat(row.querySelector('.item-price').value);
+    const total = quantity * unitPrice;
 
-        if (name) {
-          items.push({ name, quantity, unitPrice, total });
-        }
-      });
+    if (name) {
+      items.push({ name, quantity, unitPrice, total });
+    }
+  });
 
-      const subtotal = items.reduce((acc, item) => acc + item.total, 0);
-      const taxRate = parseFloat(formData.get('taxRate')) || 0;
-      const tax = (subtotal * taxRate) / 100;
-      const total = subtotal + tax;
+  const subtotal = items.reduce((acc, item) => acc + item.total, 0);
+  const taxRate = parseFloat(formData.get('taxRate')) || 0;
+  const tax = (subtotal * taxRate) / 100;
+  const total = subtotal + tax;
 
-      const payload = {
-        customerName: formData.get('customerName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        billingAddress: formData.get('billingAddress'),
-        shippingAddress: formData.get('shippingAddress'),
-        items,
-        subtotal,
-        tax,
-        total,
-        paymentTerms: formData.get('paymentTerms'),
-        shippingMethod: formData.get('shippingMethod'),
-        notes: formData.get('notes'),
-      };
+  // Package payload as flat key-value pairs
+  const payload = new URLSearchParams();
+  payload.append('customerName', formData.get('customerName'));
+  payload.append('email', formData.get('email'));
+  payload.append('phone', formData.get('phone'));
+  payload.append('billingAddress', formData.get('billingAddress'));
+  payload.append('shippingAddress', formData.get('shippingAddress'));
+  payload.append('items', JSON.stringify(items));
+  payload.append('subtotal', subtotal.toFixed(2));
+  payload.append('tax', tax.toFixed(2));
+  payload.append('total', total.toFixed(2));
+  payload.append('paymentTerms', formData.get('paymentTerms'));
+  payload.append('shippingMethod', formData.get('shippingMethod'));
+  payload.append('notes', formData.get('notes') || '');
 
-      try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbygvGlk_rzzwA3ZgAkpB8IoWtprCI1LEQmvV0dOUelNIHbO-F7p1mCiLe5aSs37ok_q/exec', {
-          //mode: 'no-cors',
-          method: 'POST',
-          body: JSON.stringify(payload),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        const result = await response.json();
-        document.getElementById('statusMessage').innerHTML =
-          result.success
-            ? `<div class="alert alert-success">Order submitted! ID: ${result.orderId}</div>`
-            : `<div class="alert alert-danger">Error: ${result.error}</div>`;
-       
-        if (result.success) form.reset();
-      } catch (err) {
-        document.getElementById('statusMessage').innerHTML =
-          `<div class="alert alert-danger">Submission failed. ${err.message}</div>`;
-      }
+  try {
+    const response = await fetch('YOUR_DEPLOYED_GAS_URL', {
+      method: 'POST',
+      body: payload,
     });
+
+    const resultText = await response.text();
+    const result = JSON.parse(resultText);
+
+    document.getElementById('statusMessage').innerHTML =
+      result.success
+        ? `<div class="alert alert-success">Order submitted! ID: ${result.orderId}</div>`
+        : `<div class="alert alert-danger">Error: ${result.error}</div>`;
+
+    if (result.success) form.reset();
+  } catch (err) {
+    document.getElementById('statusMessage').innerHTML =
+      `<div class="alert alert-danger">Submission failed. ${err.message}</div>`;
+  }
+});
 
     function addItemRow() {
       const row = document.querySelector('.item-row').cloneNode(true);
